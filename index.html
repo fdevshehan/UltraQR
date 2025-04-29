@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121212">
+    <title>UltraQR</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-dark: #3d8b40;
+            --background: #121212;
+            --surface: #1e1e1e;
+            --surface-light: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background-color: var(--surface);
+            height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .dev-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-frame {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--primary-color);
+            padding: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .profile-frame:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-frame img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .dev-name {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .dev-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .nav-menu {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background-color: var(--surface-light);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .nav-item.active:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item span {
+            font-size: 0.95rem;
+        }
+
+        .sidebar-footer {
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .top-bar {
+            display: none;
+            padding: 15px;
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            z-index: 10;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-right: 15px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .menu-toggle:hover {
+            background-color: var(--surface-light);
+        }
+
+        .page-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            flex-grow: 1;
+        }
+
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #content-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: var(--background);
+        }
+
+        /* About & Contact Pages */
+        .info-page {
+            padding: 25px;
+            height: 100%;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .info-page h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .info-page p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .contact-info {
+            margin-top: 25px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .contact-item:hover {
+            background-color: var(--surface-light);
+        }
+
+        .contact-item i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            width: 25px;
+            text-align: center;
+        }
+
+        .contact-item a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+
+        /* Feature List */
+        .feature-list {
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .feature-item i {
+            color: var(--primary-color);
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                transform: translateX(-100%);
+                width: 280px;
+                height: 100vh;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .top-bar {
+                display: flex;
+            }
+
+            .main-content {
+                padding-top: 0;
+            }
+        }
+
+        /* Loading Animation */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 20;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Backdrop for mobile sidebar */
+        .sidebar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .sidebar-backdrop.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>UltraQR</h1>
+            <p>Scan & Generate QR Codes</p>
+        </div>
+
+        <div class="dev-profile">
+            <div class="profile-frame">
+                <img src="dev.png" alt="Developer" onerror="this.src='https://via.placeholder.com/150/1e1e1e/4CAF50?text=DEV'">
+            </div>
+            <div class="dev-name">Shehan Thilakarathna</div>
+            <div class="dev-title">Application Developer</div>
+        </div>
+
+        <div class="nav-menu">
+            <a class="nav-item active" data-page="scan.html">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scanner</span>
+            </a>
+            <a class="nav-item" data-page="generate.html">
+                <i class="fas fa-plus-square"></i>
+                <span>QR Generator</span>
+            </a>
+            <a class="nav-item" data-page="about">
+                <i class="fas fa-info-circle"></i>
+                <span>About Us</span>
+            </a>
+            <a class="nav-item" data-page="contact">
+                <i class="fas fa-envelope"></i>
+                <span>Contact</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <p>© 2025 UltraQR</p>
+            <p>All rights reserved</p>
+        </div>
+    </div>
+
+    <!-- Backdrop for mobile sidebar -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="top-bar">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="page-title" id="page-title">QR Scanner</div>
+        </div>
+
+        <div class="iframe-container">
+            <div class="loader">
+                <div class="spinner"></div>
+            </div>
+            <iframe id="content-iframe" src="scan.html" title="QR Scanner"></iframe>
+            
+            <!-- About Page Content (hidden by default) -->
+            <div id="about-page" class="info-page" style="display: none;">
+                <h2>About Us</h2>
+                <p>Welcome to QR Code Tools, your all-in-one solution for scanning and generating QR codes. Our mission is to provide simple, reliable tools that work seamlessly across all your devices.</p>
+                <p>This application was developed to make QR code interactions effortless, whether you need to scan a code or create one for your business, personal use, or any other purpose.</p>
+                <p>All processing happens directly on your device, ensuring your data remains private and secure.</p>
+                
+                <div class="feature-list">
+                    <h3>Features:</h3>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Fast QR code scanning with camera</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Generate QR codes from text or URLs</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Works completely offline</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Clean, intuitive interface</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Customizable QR code colors</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Page Content (hidden by default) -->
+            <div id="contact-page" class="info-page" style="display: none;">
+                <h2>Contact Us</h2>
+                <p>Have questions or feedback? We'd love to hear from you!</p>
+                
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:shehanthilakarathna0003@gmail.com">shehanthilakarathna0003@gmail .com</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <a href="tel:+94779012471">+94 77 9012471</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Monaragala, Sri Lanka</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fab fa-github"></i>
+                        <a href="https://github.com/fdevshehan" target="_blank" rel="noopener noreferrer">github.com/fdevshehan</a>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 30px;">Our support team is available Monday to Friday, 9:00 AM to 5:00 PM.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+            const iframe = document.getElementById('content-iframe');
+            const loader = document.querySelector('.loader');
+            const pageTitle = document.getElementById('page-title');
+            const navItems = document.querySelectorAll('.nav-item');
+            const aboutPage = document.getElementById('about-page');
+            const contactPage = document.getElementById('contact-page');
+            
+            // Check if mobile device
+            const isMobile = window.innerWidth <= 768;
+            
+            // Set initial active page
+            let currentPage = 'scan.html';
+            
+            // Menu toggle for mobile
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('open');
+                sidebarBackdrop.classList.toggle('visible');
+            });
+            
+            // Close sidebar when clicking on backdrop
+            sidebarBackdrop.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                sidebarBackdrop.classList.remove('visible');
+            });
+            
+            // Navigation item clicks
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = item.getAttribute('data-page');
+                    
+                    // Update active state
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    // Update page title
+                    pageTitle.textContent = item.querySelector('span').textContent;
+                    
+                    // Load the appropriate content
+                    if (page === 'about' || page === 'contact') {
+                        // Show the static content page
+                        iframe.style.display = 'none';
+                        aboutPage.style.display = page === 'about' ? 'block' : 'none';
+                        contactPage.style.display = page === 'contact' ? 'block' : 'none';
+                        currentPage = page;
+                    } else {
+                        // Load in iframe
+                        aboutPage.style.display = 'none';
+                        contactPage.style.display = 'none';
+                        iframe.style.display = 'block';
+                        
+                        if (currentPage !== page) {
+                            loader.style.display = 'block';
+                            iframe.onload = () => {
+                                loader.style.display = 'none';
+                            };
+                            iframe.src = page;
+                            currentPage = page;
+                        }
+                    }
+                    
+                    // Close sidebar on mobile after selection
+                    if (isMobile) {
+                        sidebar.classList.remove('open');
+                        sidebarBackdrop.classList.remove('visible');
+                    }
+                });
+            });
+            
+            // Handle iframe loading
+            iframe.onload = () => {
+                loader.style.display = 'none';
+            };
+            
+            // Initial iframe load might already be cached, so hide loader after short delay
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                if (isMobile && sidebar.classList.contains('open') && 
+                    !sidebar.contains(e.target) && 
+                    e.target !== menuToggle) {
+                    sidebar.classList.remove('open');
+                    sidebarBackdrop.classList.remove('visible');
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('open');
+                    sidebarBackdrop.classList.remove('visible');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
