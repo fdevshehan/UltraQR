@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121212">
+    <title>QR Code Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .header {
+            padding: 16px;
+            text-align: center;
+            background-color: #1e1e1e;
+            position: relative;
+            z-index: 10;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .scanner-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            width: 80%;
+            max-width: 280px;
+            height: 280px;
+            border: 2px solid #4CAF50;
+            border-radius: 12px;
+            box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scan-line {
+            width: 90%;
+            height: 2px;
+            background-color: #4CAF50;
+            position: absolute;
+            top: 10%;
+            animation: scan 2.5s infinite ease-in-out;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+        }
+
+        @keyframes scan {
+            0%, 100% {
+                top: 10%;
+            }
+            50% {
+                top: 90%;
+            }
+        }
+
+        .corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #4CAF50;
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .corner-tl {
+            top: -2px;
+            left: -2px;
+            border-top-width: 4px;
+            border-left-width: 4px;
+            border-top-left-radius: 8px;
+        }
+
+        .corner-tr {
+            top: -2px;
+            right: -2px;
+            border-top-width: 4px;
+            border-right-width: 4px;
+            border-top-right-radius: 8px;
+        }
+
+        .corner-bl {
+            bottom: -2px;
+            left: -2px;
+            border-bottom-width: 4px;
+            border-left-width: 4px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .corner-br {
+            bottom: -2px;
+            right: -2px;
+            border-bottom-width: 4px;
+            border-right-width: 4px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 100px;
+            text-align: center;
+            padding: 0 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            bottom: calc(100px + env(safe-area-inset-bottom));
+        }
+
+        .result-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .result-box {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #4CAF50;
+        }
+
+        .result-content {
+            word-break: break-all;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            background-color: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #333;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            opacity: 0.8;
+        }
+
+        .error-message {
+            color: #ff4444;
+            text-align: center;
+            padding: 20px;
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            background-color: rgba(30, 30, 30, 0.9);
+            border-radius: 8px;
+        }
+
+        .footer {
+            padding: 12px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            background-color: #1e1e1e;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        }
+
+        .torch-btn {
+            position: absolute;
+            bottom: 160px;
+            background-color: rgba(30, 30, 30, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            bottom: calc(160px + env(safe-area-inset-bottom));
+        }
+
+        .torch-btn:active {
+            transform: scale(0.95);
+        }
+
+        .torch-btn.active {
+            background-color: rgba(76, 175, 80, 0.7);
+        }
+
+        .torch-icon {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 15;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* For very small screens */
+        @media (max-height: 600px) {
+            .scan-overlay {
+                height: 220px;
+                max-width: 220px;
+            }
+            
+            .instructions {
+                bottom: 80px;
+                font-size: 0.8rem;
+            }
+            
+            .torch-btn {
+                bottom: 140px;
+                width: 48px;
+                height: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!--<div class="header">
+        <h1>QR Code Scanner</h1>
+    </div>-->
+
+    <div class="scanner-container">
+        <div class="loading">
+            <div class="spinner"></div>
+        </div>
+        
+        <video id="video" playsinline></video>
+        
+        <div class="scan-overlay">
+            <div class="scan-line"></div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+        </div>
+
+        <button class="torch-btn" id="torch-btn" aria-label="Toggle torch">
+            <svg class="torch-icon" viewBox="0 0 24 24">
+                <path d="M6,2L7,7H13L14,2H6M15,15V16A5,5 0 0,1 10,21A5,5 0 0,1 5,16V15H15M10,18A2,2 0 0,0 12,16A2,2 0 0,0 10,14A2,2 0 0,0 8,16A2,2 0 0,0 10,18M17,12V7H19V12H17M17,16V14H19V16H17Z" />
+            </svg>
+        </button>
+
+        <div class="instructions">
+            Point your camera at a QR code to scan it
+        </div>
+
+        <div class="error-message" id="error-message">
+            Unable to access camera. Please ensure you have granted camera permissions.
+        </div>
+    </div>
+
+    <div class="footer">
+        QR Code Scanner
+    </div>
+
+    <div class="result-container" id="result-container">
+        <div class="result-box">
+            <div class="result-title">Scan Result</div>
+            <div class="result-content" id="result-content"></div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="copy-btn">Copy</button>
+                <button class="btn btn-secondary" id="close-result-btn">Scan Again</button>
+                <button class="btn btn-secondary" id="open-btn" style="display: none;">Open Link</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="jsQR.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const resultContainer = document.getElementById('result-container');
+            const resultContent = document.getElementById('result-content');
+            const copyBtn = document.getElementById('copy-btn');
+            const closeResultBtn = document.getElementById('close-result-btn');
+            const openBtn = document.getElementById('open-btn');
+            const errorMessage = document.getElementById('error-message');
+            const torchBtn = document.getElementById('torch-btn');
+            const loading = document.querySelector('.loading');
+            
+            let stream = null;
+            let torchOn = false;
+            let scanActive = true;
+            let lastScanTime = 0;
+            const scanDelay = 2000; // 2 seconds between scans
+
+            // Check for mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            // Initialize scanner
+            initScanner();
+
+            async function initScanner() {
+                try {
+                    loading.style.display = 'block';
+                    
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: false
+                    });
+                    
+                    video.srcObject = stream;
+                    
+                    // Wait for video to be ready
+                    await new Promise((resolve) => {
+                        video.onloadedmetadata = () => {
+                            video.play();
+                            resolve();
+                        };
+                    });
+                    
+                    loading.style.display = 'none';
+                    
+                    // Start scanning
+                    requestAnimationFrame(scan);
+                    
+                    // Show torch button if available
+                    if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+                        try {
+                            const devices = await navigator.mediaDevices.enumerateDevices();
+                            const hasTorch = devices.some(device => 
+                                device.kind === 'videoinput' && 
+                                device.label.toLowerCase().includes('back')
+                            );
+                            
+                            if (hasTorch) {
+                                const track = stream.getVideoTracks()[0];
+                                if (track && 'torch' in track.getCapabilities()) {
+                                    torchBtn.style.display = 'flex';
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Torch detection error:', e);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Camera error:', err);
+                    loading.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    
+                    // Show instructions for enabling camera
+                    if (err.name === 'NotAllowedError') {
+                        errorMessage.innerHTML = `Camera access denied. <br><br>Please enable camera permissions in your browser settings.`;
+                    }
+                }
+            }
+
+            function scan() {
+                if (!scanActive) return;
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const currentTime = Date.now();
+                    if (currentTime - lastScanTime < scanDelay) {
+                        requestAnimationFrame(scan);
+                        return;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const context = canvas.getContext('2d');
+                    
+                    // Draw video frame to canvas
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get image data from the center of the frame (where the overlay is)
+                    const overlayWidth = canvas.width * 0.8;
+                    const overlayHeight = Math.min(280, canvas.height * 0.6);
+                    const startX = (canvas.width - overlayWidth) / 2;
+                    const startY = (canvas.height - overlayHeight) / 2;
+                    
+                    const imageData = context.getImageData(startX, startY, overlayWidth, overlayHeight);
+                    
+                    // Scan for QR code
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert',
+                    });
+                    
+                    if (code) {
+                        lastScanTime = currentTime;
+                        handleScanResult(code.data);
+                    }
+                }
+                
+                if (scanActive) {
+                    requestAnimationFrame(scan);
+                }
+            }
+
+            function handleScanResult(result) {
+                scanActive = false;
+                resultContent.textContent = result;
+                resultContainer.style.display = 'flex';
+                
+                // Show "Open" button if it's a URL
+                const isUrl = /^https?:\/\//i.test(result);
+                openBtn.style.display = isUrl ? 'block' : 'none';
+                
+                // Vibrate on success if mobile
+                if (isMobile && navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                // Auto-copy URLs to clipboard
+                if (isUrl && isMobile) {
+                    navigator.clipboard.writeText(result).catch(err => {
+                        console.error('Auto-copy failed:', err);
+                    });
+                }
+            }
+
+            // Copy result to clipboard
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(resultContent.textContent).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                    }, 2000);
+                    
+                    if (isMobile && navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }).catch(err => {
+                    console.error('Copy failed:', err);
+                });
+            });
+
+            // Close result and resume scanning
+            closeResultBtn.addEventListener('click', () => {
+                resultContainer.style.display = 'none';
+                scanActive = true;
+                requestAnimationFrame(scan);
+            });
+
+            // Open URL if result is a link
+            openBtn.addEventListener('click', () => {
+                window.open(resultContent.textContent, '_blank');
+            });
+
+            // Toggle torch/flashlight
+            torchBtn.addEventListener('click', async () => {
+                if (!stream) return;
+                
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+                
+                try {
+                    if ('torch' in track.getCapabilities()) {
+                        await track.applyConstraints({
+                            advanced: [{ torch: !torchOn }]
+                        });
+                        torchOn = !torchOn;
+                        torchBtn.classList.toggle('active', torchOn);
+                        
+                        if (isMobile && navigator.vibrate) {
+                            navigator.vibrate(30);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Torch error:', err);
+                }
+            });
+
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            });
+            
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden' && stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                } else if (document.visibilityState === 'visible' && !stream) {
+                    initScanner();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
